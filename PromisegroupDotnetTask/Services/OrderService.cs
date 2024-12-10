@@ -34,44 +34,36 @@ namespace PromisegroupDotnetTask.Models
             }
         }
 
+
         public decimal CalculateTotal()
         {
-            decimal total = OrderItems.Sum(o => o.TotalPrice);
+            // Initial sum
+            decimal total = OrderItems.Sum(item => item.Product.Price * item.Quantity);
 
-            var sortedItems = OrderItems.OrderBy(o => o.Product.Price).ToList();
-            if (sortedItems.Count >= 2)
+            // Applying discounts:
+            // Discount for orders with 3 or more products
+            if (OrderItems.Count >= 3)
             {
-                total -= sortedItems[1].Product.Price * 0.1m;
+                total *= 0.9m; // 10% discount
+            }
+            // Discount for orders with 2 products
+            else if (OrderItems.Count == 2)
+            {
+                total *= 0.95m; // 5% discount
             }
 
-            if (sortedItems.Count >= 3)
+            // Discount for orders over 5000 PLN
+            if (total > 5000)
             {
-                total -= sortedItems[2].Product.Price * 0.2m;
+                total *= 0.95m; // 5% discount
             }
 
-            if (total > 5000m)
-                total *= 0.95m;
-
-            return total;
+            // Rounding to two decimal places
+            return Math.Round(total, 2, MidpointRounding.AwayFromZero);
         }
-        /*
-        public void SaveToHistory()
-        {
-            string filePath = "OrderHistory.txt";
 
-            StringBuilder orderSummary = new StringBuilder();
-            orderSummary.AppendLine("Zamówienie:");
-            foreach (var item in OrderItems)
-            {
-                orderSummary.AppendLine($"{item.Product.Name} x{item.Quantity} - {item.TotalPrice} PLN");
-            }
 
-            orderSummary.AppendLine($"Całkowita wartość zamówienia: {CalculateTotal()} PLN");
-            orderSummary.AppendLine($"Data: {DateTime.Now}");
-            orderSummary.AppendLine(new string('-', 30));
 
-            File.AppendAllText(filePath, orderSummary.ToString());
-        }*/
 
         public void SaveToHistory()
         {
@@ -84,7 +76,6 @@ namespace PromisegroupDotnetTask.Models
             }
 
             StringBuilder orderSummary = new StringBuilder();
-            orderSummary.AppendLine("Zamówienie:");
             decimal totalBeforeDiscount = 0m;
             decimal totalAfterDiscount = CalculateTotal();
 
@@ -101,7 +92,9 @@ namespace PromisegroupDotnetTask.Models
             // Displaying discount information
             orderSummary.AppendLine($"Suma przed rabatami: {totalBeforeDiscount} PLN");
 
+            // Sort items by price for discount purposes
             var sortedItems = OrderItems.OrderBy(o => o.Product.Price).ToList();
+
             if (sortedItems.Count >= 2)
             {
                 decimal discount = sortedItems[1].Product.Price * 0.1m;
@@ -137,8 +130,7 @@ namespace PromisegroupDotnetTask.Models
                 Console.WriteLine($"Błąd podczas zapisu do pliku: {ex.Message}");
             }
         }
-
-
     }
+
 
 }
